@@ -1,0 +1,84 @@
+#!/bin/bash
+
+printHelp(){
+    ### print help
+    echo "usage: release [version]";
+    echo "       release [version] [tag]"; 
+    echo "       release [version] [tag] [developer version]";
+    exit 1;
+}
+
+release(){
+
+    ### verify and print help
+    if [ "${1}" == "-h" ]; then 
+        printHelp
+    else
+        echo "Generating release variables:";
+    fi
+
+    ### detect app version
+
+    if [ -z ${1+x} ]; then
+        echo "Detect app version..."
+        APP_VERSION=`mvn help:evaluate -o -Dexpression=project.version 2>/dev/null| grep -v "^\["`
+
+        if [ $APP_VERSION == 1 ]; then
+            echo "Could not detect pom file! Check if the current folder contains a file called \"pom.xml\"."
+            exit 2
+        fi
+
+        RELEASE_VERSION=${APP_VERSION%-SNAPSHOT}
+    fi 
+
+    
+
+    ### repare release
+
+    RELEASE_VERSION=${1:-"${RELEASE_VERSION}"}
+    RELEASE_TAG=${2:-"v${RELEASE_VERSION}"}
+    DEVELOPER_VERSION=${3:-"${RELEASE_VERSION%.*}.$((${RELEASE_VERSION##*.}+1))-SNAPSHOT"}
+
+    echo " - current version:    $APP_VERSION" &&
+    echo " - release version:    $RELEASE_VERSION" &&
+    echo " - release tag name:   $RELEASE_TAG" &&
+    echo " - developent version: $DEVELOPER_VERSION" &&
+    echo "============================" &&
+    echo "Please confirm..." &&
+    read &&
+
+    ### perform release
+    echo "=== prepare release ===" &&
+    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$DEVELOPER_VERSION &&
+    echo "=== cleanup ===" && 
+    mvn release:clean &&
+    echo "=== checkout new release ===" &&
+    git fetch --all &&
+    git checkout $RELEASE_TAG &&
+    echo "=== install release locally ===" &&
+    mvn clean install
+    echo "=== deploy to scabb ===" &&
+    mvn deploy -DaltDeploymentRepository=releases::default::http://bone.no-ip.biz:53538/nexus/content/repositories/releases/ &&
+
+    echo "=== upgrade latest-stable ===" &&
+    git checkout latest-stable &&
+    git reset --hard $RELEASE_TAG &&
+    git push origin latest-stable --force &&
+
+    echo "=== checkout master ===" && 
+
+    git checkout master &&
+    git pull &&
+    echo "=== upgrade master version ===" &&
+    echo "=== continue? ===" &&
+    read &&
+    mvn release:update-versions -DautoVersionSubmodules -Dresume=false &&
+    git commit -am "upgrade devel version." &&
+    git push &&
+
+    echo "=== final sync ===" &&
+    git pull --all &&
+    echo finished
+}
+
+release $@
