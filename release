@@ -56,7 +56,7 @@ release(){
     git fetch --all &&
     git checkout $RELEASE_TAG &&
     echo "=== install release locally ===" &&
-    mvn clean install
+    mvn clean install &&
     echo "=== deploy to scabb ===" &&
     mvn deploy -DaltDeploymentRepository=releases::default::http://bone.no-ip.biz:53538/nexus/content/repositories/releases/ &&
 
