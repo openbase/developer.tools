@@ -33,17 +33,23 @@ release(){
 
     
 
-    ### repare release
+    ### configure release
 
     RELEASE_VERSION=${1:-"${RELEASE_VERSION}"}
     RELEASE_TAG=${2:-"v${RELEASE_VERSION}"}
     DEVELOPER_VERSION=${3:-"${RELEASE_VERSION%.*}.$((${RELEASE_VERSION##*.}+1))-SNAPSHOT"}
+    RELEASE_BRANCH=${git rev-parse --abbrev-ref HEAD}
+    
+    ### repare release
 
-    echo " - current version:    $APP_VERSION" &&
-    echo " - release version:    $RELEASE_VERSION" &&
-    echo " - release tag name:   $RELEASE_TAG" &&
-    echo " - developent version: $DEVELOPER_VERSION" &&
-    echo "============================" &&
+    echo "============================================" &&
+    echo " - current version:       $APP_VERSION" &&
+    echo " - release version:       $RELEASE_VERSION" &&
+    echo " - next relese version:   $DEVELOPER_VERSION" &&
+    echo "--------------------------------------------" &&
+    echo " - release branch:        $RELEASE_BRANCH" && 
+    echo " - release tag:           $RELEASE_TAG" &&
+    echo "============================================" &&
     echo "Please confirm..." &&
     read &&
 
@@ -58,27 +64,19 @@ release(){
     echo "=== install release locally ===" &&
     mvn clean install &&
     echo "=== deploy to scabb ===" &&
-    mvn deploy -DaltDeploymentRepository=releases::default::http://bone.no-ip.biz:53538/nexus/content/repositories/releases/ &&
+    mvn deploy -DaltDeploymentRepository=releases::default::http://bone.no-ip.biz:53538/nexus/content/repositories/releases/ -DskipTests &&
 
     echo "=== upgrade latest-stable ===" &&
     git checkout latest-stable &&
     git reset --hard $RELEASE_TAG &&
     git push origin latest-stable --force &&
 
-    echo "=== checkout master ===" && 
-
-    git checkout master &&
+    echo "=== checkout and build release branch ===" && 
+    git checkout $RELEASE_BRANCH &&
     git pull &&
-    echo "=== upgrade master version ===" &&
-    echo "=== continue? ===" &&
-    read &&
-    mvn release:update-versions -DautoVersionSubmodules -Dresume=false &&
-    git commit -am "upgrade devel version." &&
-    git push &&
+    mvn clean install
 
-    echo "=== final sync ===" &&
-    git pull --all &&
-    echo finished
+    echo "=== finished ===" &&
 }
 
 release $@

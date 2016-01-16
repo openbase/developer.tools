@@ -1,0 +1,17 @@
+#!/bin/bash
+
+upgrade(){
+
+    echo "=== sync ===" && 
+    git pull --rebase &&
+    read &&
+    mvn release:update-versions -DautoVersionSubmodules -Dresume=false &&
+    git commit -am "upgrade devel version." &&
+    git push &&
+
+    echo "=== final sync ===" &&
+    git pull &&
+    echo finished
+}
+
+upgrade $@
