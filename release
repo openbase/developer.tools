@@ -4,8 +4,7 @@ printHelp(){
     ### print help
     echo "usage: release [version]";
     echo "       release [version] [tag]"; 
-    echo "       release [version] [tag] [developer version]";
-    exit 1;
+    echo "       release [version] [tag] [next release version]";
 }
 
 release(){
@@ -13,49 +12,127 @@ release(){
     ### verify and print help
     if [ "${1}" == "-h" ]; then 
         printHelp
-    else
-        echo "Generating release variables:";
+        exit 1
     fi
 
-    ### detect app version
+    ### determine release informations
 
     if [ -z ${1+x} ]; then
-        echo "Detect app version..."
-        APP_VERSION=`mvn help:evaluate -o -Dexpression=project.version 2>/dev/null| grep -v "^\["`
+        echo "Determine release informations..." &&
+        CURRENT_VERSION=`mvn help:evaluate -o -Dexpression=project.version 2>/dev/null| grep -v "^\["` &&
 
-        if [ $APP_VERSION == 1 ]; then
-            echo "Could not detect pom file! Check if the current folder contains a file called \"pom.xml\"."
+        if [ $CURRENT_VERSION == 1 ]; then
+            echo "ERROR: Could not detect pom file! Check if the current folder contains a file called \"pom.xml\"."
             exit 2
         fi
+        
+        if [[ "${CURRENT_VERSION}" != *"-SNAPSHOT" ]]; then
+            echo "ERROR: Current project Version[$CURRENT_VERSION] seems not to be a snapshot! Please check release branch!"
+            exit 3
+        fi
 
-        RELEASE_VERSION=${APP_VERSION%-SNAPSHOT}
-    fi 
+        RELEASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
+    fi
+
+    RELEASE_VERSION=${1:-"${RELEASE_VERSION}"}  &&
+    RELEASE_TAG=${2:-"v${RELEASE_VERSION}"}  &&
+    NEXT_RELEASE_VERSION=${3:-"${RELEASE_VERSION%.*}.$((${RELEASE_VERSION##*.}+1))-SNAPSHOT"}  &&
+    RELEASE_BRANCH=`git rev-parse --abbrev-ref HEAD`  &&
+
+    IFS='.'
+    components=(${RELEASE_VERSION##*-})
+    RELEASE_VERSION_MAJOR="${components[0]}"
+    RELEASE_VERSION_MINOR="${components[1]}"
+    RELEASE_VERSION_MICRO="${components[2]}"
 
     
+    if [[ "${RELEASE_BRANCH}" == *"alpha"* ]]; then
+        RELEASE_TYPE='alpha'
+    fi
+    
+    if [[ "${RELEASE_BRANCH}" == *"beta"* ]]; then
+        RELEASE_TYPE='beta'
+    fi
+   
+    if [[ "${RELEASE_BRANCH}" == *"rc"* ]]; then
+        RELEASE_TYPE='rc'
+    fi
 
-    ### configure release
+    if [[ "${RELEASE_BRANCH}" == *"rc1"* ]]; then
+        RELEASE_TYPE='rc1'
+    fi
 
-    RELEASE_VERSION=${1:-"${RELEASE_VERSION}"}
-    RELEASE_TAG=${2:-"v${RELEASE_VERSION}"}
-    DEVELOPER_VERSION=${3:-"${RELEASE_VERSION%.*}.$((${RELEASE_VERSION##*.}+1))-SNAPSHOT"}
-    RELEASE_BRANCH=${git rev-parse --abbrev-ref HEAD}
+    if [[ "${RELEASE_BRANCH}" == *"rc2"* ]]; then
+        RELEASE_TYPE='rc2'
+    fi
+
+    if [ -z "${RELEASE_TYPE}" ]; then
+        RELEASE_TYPE='stable'
+    else
+        RELEASE_TAG=$RELEASE_TAG'-'$RELEASE_TYPE
+    fi
+    
+    ### verify release
+    
+    if [ -z "${CURRENT_VERSION}" ]; then
+        echo "ERROR: Could not detect  version!"
+        exit 4
+    fi
+    
+    if [ -z "${RELEASE_VERSION}" ]; then
+        echo "ERROR: Could not detect release version!"
+        exit 5
+    fi
+    
+    if [ -z "${NEXT_RELEASE_VERSION}" ]; then
+        echo "ERROR: Could not detect next release version!"
+        exit 6
+    fi
+    
+    if [ -z "${RELEASE_BRANCH}" ]; then
+        echo "ERROR: Could not detect release branch version!"
+        exit 7
+    fi
+    
+    if [ -z "${RELEASE_TAG}" ]; then
+        echo "ERROR: Could not detect release tag version!"
+        exit 8
+    fi
+    
+    if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
+        echo "WARNING: No deployment repository defined! Define repository by exporting varibale MVN_RELEASE_REPOSITORY before triggering the release." &&
+        echo "Continue without deployment?" &&
+        awaitConfirmation
+    fi
+    
+    if [ "${RELEASE_TYPE}" == 'stable' ]; then
+        EXPECTED_RELEASE_BRANCH=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
+        if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
+            echo "ERROR: Expected release Branch[$EXPECTED_RELEASE_BRANCH] but found Branch[$RELEASE_BRANCH]!"
+            echo "ERROR: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
+            exit 9
+        fi
+    fi
     
     ### repare release
 
-    echo "============================================" &&
-    echo " - current version:       $APP_VERSION" &&
-    echo " - release version:       $RELEASE_VERSION" &&
-    echo " - next relese version:   $DEVELOPER_VERSION" &&
-    echo "--------------------------------------------" &&
-    echo " - release branch:        $RELEASE_BRANCH" && 
-    echo " - release tag:           $RELEASE_TAG" &&
-    echo "============================================" &&
-    echo "Please confirm..." &&
-    read &&
+    echo "================================================================================" &&
+    echo " - current version:           $CURRENT_VERSION" &&
+    echo " - release version:           $RELEASE_VERSION" &&
+    echo " - next release version:      $NEXT_RELEASE_VERSION" &&
+    echo "--------------------------------------------------------------------------------" &&
+    echo " - release branch:            $RELEASE_BRANCH" && 
+    echo " - release tag:               $RELEASE_TAG" &&
+    echo " - release type:              $RELEASE_TYPE" &&
+    if ! [ -z "$MVN_RELEASE_REPOSITORY" ]; then
+        echo " - deployment repository:     $MVN_RELEASE_REPOSITORY"
+    fi
+    echo "================================================================================" &&
+    awaitConfirmation &&
 
     ### perform release
     echo "=== prepare release ===" &&
-    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$DEVELOPER_VERSION &&
+    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION &&
     echo "=== cleanup ===" && 
     mvn release:clean &&
     echo "=== checkout new release ===" &&
@@ -63,8 +140,13 @@ release(){
     git checkout $RELEASE_TAG &&
     echo "=== install release locally ===" &&
     mvn clean install &&
+
     echo "=== deploy to scabb ===" &&
-    mvn deploy -DaltDeploymentRepository=releases::default::http://bone.no-ip.biz:53538/nexus/content/repositories/releases/ -DskipTests &&
+    if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
+        echo "INFO: Skip deployment."
+    else
+        mvn deploy -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests
+    fi
 
     echo "=== upgrade latest-stable ===" &&
     git checkout latest-stable &&
@@ -72,11 +154,20 @@ release(){
     git push origin latest-stable --force &&
 
     echo "=== checkout and build release branch ===" && 
-    git checkout $RELEASE_BRANCH &&
+    git checkout ${RELEASE_BRANCH} &&
     git pull &&
-    mvn clean install
+    mvn clean install && 
 
-    echo "=== finished ===" &&
+    echo "=== finished ==="
+}
+
+awaitConfirmation(){
+read -p "Please type yes to confirm: " -n 1 -r &&
+    echo &&  # new line
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Release aborted by user..."
+        exit 255
+    fi
 }
 
 release $@
