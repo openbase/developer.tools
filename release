@@ -41,6 +41,7 @@ release(){
 
     IFS='.'
     components=(${RELEASE_VERSION##*-})
+    IFS=''
     RELEASE_VERSION_MAJOR="${components[0]}"
     RELEASE_VERSION_MINOR="${components[1]}"
     RELEASE_VERSION_MICRO="${components[2]}"
