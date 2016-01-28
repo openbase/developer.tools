@@ -19,7 +19,7 @@ release(){
 
     if [ -z ${1+x} ]; then
         echo "Determine release informations..." &&
-        CURRENT_VERSION=`mvn help:evaluate -o -Dexpression=project.version 2>/dev/null| grep -v "^\["` &&
+        CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["` &&
 
         if [ $CURRENT_VERSION == 1 ]; then
             echo "ERROR: Could not detect pom file! Check if the current folder contains a file called \"pom.xml\"."
