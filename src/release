@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# configure exit on error
+set -e
+
 printHelp(){
     ### print help
     echo "usage: release [version]";
@@ -107,7 +110,7 @@ release(){
     fi
     
     if [ "${RELEASE_TYPE}" == 'stable' ]; then
-        EXPECTED_RELEASE_BRANCH=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
+        EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
         if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
             echo "ERROR: Expected release Branch[$EXPECTED_RELEASE_BRANCH] but found Branch[$RELEASE_BRANCH]!"
             echo "ERROR: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
