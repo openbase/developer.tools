@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# configure exit on error
+set -e
+
+mvn install -o -DskipTests=true -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dsource.skip=true -DskipAddThirdParty=true -Dlicense.skipUpdateProjectLicense=true -Dmaven.license.skip=true
+
