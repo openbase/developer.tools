@@ -4,6 +4,7 @@ upgrade(){
 
     echo "=== sync ===" && 
     git pull --rebase &&
+    echo please confirm to continue...
     read &&
     mvn release:update-versions -DautoVersionSubmodules -Dresume=false &&
     git commit -am "upgrade devel version." &&
