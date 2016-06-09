@@ -6,6 +6,9 @@
 
 ORIGIN_FOLDER=$(pwd)
 
+echo clean
+mvn clean
+
 echo rename source folder
 
 SOURCE_FOLDER=$(find ./ -type d -name 'dc' | grep .git -v | grep target -v)
@@ -18,12 +21,17 @@ do
    cd ${ORIGIN_FOLDER}
 done
 
-#echo rename packages
-#sed -i 's/.dc./.openbase./g' *.java
+echo rename groups and imports
+find . -type f | grep -v .git | xargs sed -i 's/org\.dc/org\.openbase/g'
 
-#echo rename artifacts
-#sed -i 's/dc/openbase/g' *.pom
+echo rename domain
+find . -type f | grep -v .git | xargs sed -i 's/DivineCooperation/openbase.org/g'
 
-#echo rename cooperation namw
-#sed -i 's/DivineCooperation/openbase.org/g' *.pom
+echo rename github url
+find . -type f | grep -v .git | xargs sed -i 's/github\.com\/divinecooperation/github\.com\/openbase/g'
+
+echo rename git remote repository
+sed -i 's/github\.com\/divinecooperation/github\.com\/openbase/g' ./.git/config
+    
+
 
