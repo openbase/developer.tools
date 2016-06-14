@@ -16,10 +16,18 @@ SOURCE_FOLDER=$(find ./ -type d -name 'dc' | grep .git -v | grep target -v)
 for DIR in ${SOURCE_FOLDER}
 do
    echo [$DIR]
+
+   INTERNAL_FILE_COUNTER=$(find $DIR -type f | wc -l)
    cd ${DIR}/..
-   git mv dc openbase
+   if [ $INTERNAL_FILE_COUNTER == 0 ]; then
+       mv dc openbase 
+   else
+       git mv dc openbase
+   fi
+
    cd ${ORIGIN_FOLDER}
 done
+
 
 echo rename groups and imports
 find . -type f | grep -v .git | xargs sed -i 's/org\.dc/org\.openbase/g'
