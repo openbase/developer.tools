@@ -40,6 +40,8 @@ find . -type f | grep -v .git | xargs sed -i 's/github\.com\/divinecooperation/g
 
 echo rename git remote repository
 sed -i 's/github\.com\/divinecooperation/github\.com\/openbase/g' ./.git/config
+
+echo finished
     
 
 
