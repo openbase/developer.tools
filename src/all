@@ -1,0 +1,40 @@
+#!/bin/bash
+
+NC='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+BLUE='\033[0;34m'
+
+# verify project folder
+if [ ! -e ./.workspace.conf ]; then
+    echo -e "=== ${RED}Current folder seems not to be a project folder. (Project configuration file \".workspace.conf\" not found)${NC} ==="
+    exit 1 
+fi
+# load project configuration
+source .workspace.conf
+
+
+SKIP_ON_ERROR=${SKIP_ON_ERROR:-1}
+ORIGIN_DIR=`pwd`
+
+for project in ${PROJECT_LIST}; do
+    echo -e "=== ${BLUE}$project${NC} === "
+    cd $project
+    $@  
+    lastResult=$?
+    if [ $lastResult  != 0 ] 
+    then
+        echo -e "=== ${RED}error by executing [$@] in project $project${NC} ==="
+        if [ $SKIP_ON_ERROR  == 1 ] 
+        then
+            cd ..
+            exit 1
+        fi
+    fi  
+
+    cd $ORIGIN_DIR
+    echo ""
+done
+
+echo -e "=== ${GREEN}finished${NC} ==="
