@@ -8,7 +8,7 @@ BLUE='\033[0;34m'
 
 # verify project folder
 if [ ! -e ./.workspace.conf ]; then
-    echo -e "=== ${RED}Current folder seems not to be a project folder. (Project configuration file \".workspace.conf\" not found)${NC} ==="
+    echo -e "=== ${ORANGE}Current folder seems not to be a project folder. (Project configuration file \".workspace.conf\" not found)${NC} ==="
     exit 1 
 fi
 # load project configuration
@@ -18,6 +18,7 @@ source .workspace.conf
 SKIP_ON_ERROR=${SKIP_ON_ERROR:-1}
 ORIGIN_DIR=`pwd`
 
+START=$(date +%s.%N)
 for project in ${PROJECT_LIST}; do
     echo -e "=== ${BLUE}$project${NC} === "
     cd $project
@@ -36,5 +37,6 @@ for project in ${PROJECT_LIST}; do
     cd $ORIGIN_DIR
     echo ""
 done
-
-echo -e "=== ${GREEN}finished${NC} ==="
+END=$(date +%s.%N)
+PROCESSING_TIME=$(echo "$END - $START" | bc)
+echo -e "=== ${GREEN}finished${NC} in ${PROCESSING_TIME} sec ==="
