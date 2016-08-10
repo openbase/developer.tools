@@ -1,4 +1,4 @@
 #!/bin/bash
 
-SKIP_ON_ERROR=1
+SKIP_ON_ERROR=0
 source all
