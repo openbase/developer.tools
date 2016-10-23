@@ -1,1 +1,4 @@
-all-force
+#!/bin/bash
+
+SKIP_ON_ERROR=0
+source all
