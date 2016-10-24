@@ -4,6 +4,8 @@
 set -e
 set -o pipefail
 
+clear
+
 printHelp(){
     ### print help
     echo "usage: release [version]";
@@ -105,17 +107,20 @@ release(){
     fi
     
     if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
-        echo "WARNING: No deployment repository defined! Define repository by exporting varibale MVN_RELEASE_REPOSITORY before triggering the release." &&
-        echo "Continue without deployment?" &&
-        awaitConfirmation
+        echo "WARNING: No deployment repository defined! Define repository by exporting varibale MVN_RELEASE_REPOSITORY before triggering the release."
+        echo "         Continue without deployment..."
     fi
     
     if [ "${RELEASE_TYPE}" == 'stable' ]; then
         EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
         if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
-            echo "ERROR: Expected release Branch[$EXPECTED_RELEASE_BRANCH] but found Branch[$RELEASE_BRANCH]!"
-            echo "ERROR: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
-            exit 9
+            echo "WARNING: Expected release Branch[$EXPECTED_RELEASE_BRANCH] but found Branch[$RELEASE_BRANCH]!"
+            echo "WARNING: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
+            echo "         Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated?"
+            awaitConfirmation &&
+            git checkout -b $EXPECTED_RELEASE_BRANCH
+            git push origin $EXPECTED_RELEASE_BRANCH
+            RELEASE_BRANCH=$EXPECTED_RELEASE_BRANCH
         fi
     fi
     
