@@ -125,7 +125,7 @@ release(){
             git commit -am "create release branch ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT"
             git push
             echo all done? than restart release
-            release $@           
+            #release $@           
             exit 0
         fi
     fi
