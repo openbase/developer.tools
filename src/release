@@ -125,7 +125,6 @@ release(){
             git commit -am "create release branch ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT"
             git push
             echo all done? than restart release
-            #release $@           
             exit 0
         fi
     fi
@@ -148,20 +147,20 @@ release(){
 
     ### perform release
     echo "=== prepare release ===" &&
-    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION &&
+    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION $MVN_ARGS &&
     echo "=== cleanup ===" && 
     mvn release:clean &&
-    echo "=== checkout new release ===" &&
-    git fetch --all &&
-    git checkout $RELEASE_TAG &&
-    echo "=== install release locally ===" &&
-    mvn clean install &&
+    echo "=== checkout new release ==="
+    git fetch --all
+    git checkout $RELEASE_TAG
+    echo "=== install release locally ==="
+    mvn clean install $MVN_ARGS
 
     echo "=== deploy to scabb ===" &&
     if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
         echo "INFO: Skip deployment."
     else
-        mvn deploy -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests
+        mvn deploy -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
     fi
 
     echo "=== upgrade latest-stable ===" &&
@@ -172,7 +171,7 @@ release(){
     echo "=== checkout and build release branch ===" && 
     git checkout ${RELEASE_BRANCH} &&
     git pull &&
-    mvn clean install && 
+    mvn clean install $MVN_ARGS && 
 
     echo "=== finished ==="
 }
