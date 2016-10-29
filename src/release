@@ -124,7 +124,7 @@ release(){
             mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'.0-SNAPSHOT'
             git commit -am "create release branch ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT"
             git push
-            echo all done? than restart release
+            echo INFO: Release branch created. Please check dependencies and remove snapshot versions. Afterwards restart this release script.
             exit 0
         fi
     fi
