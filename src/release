@@ -177,9 +177,9 @@ release(){
 }
 
 awaitConfirmation(){
-read -p "Please type yes to confirm: " -n 1 -r &&
+read -p "Please type y to confirm: " -n 1 -r &&
     echo &&  # new line
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    if [[ ! $REPLY =~ ^[YyZz]$ ]]; then
         echo "Release aborted by user..."
         exit 255
     fi
