@@ -3,5 +3,13 @@
 # configure exit on error
 set -e
 
-mvn clean install -o -DskipTests=true -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dsource.skip=true -DskipAddThirdParty=true -Dlicense.skipUpdateProjectLicense=true -Dmaven.license.skip=true
-
+mvn clean install -o \
+        -DskipTests=true \
+        -Dmaven.javadoc.skip=true \
+        -Dmaven.test.skip=true \
+        -Dsource.skip=true \
+        -Dlicense.skipAddThirdParty=true \
+        -Dlicense.skipUpdateProjectLicense=true \
+        -Dlicense.skipDownloadLicenses \
+        -Dlicense.skipCheckLicense=true \
+        -Dmaven.license.skip=true $@
