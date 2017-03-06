@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# configure exit on error
+set -e
+
+mvn install -o \
+        -DassembleDirectory=${prefix} \
+        -DskipTests=true \
+        -Dmaven.javadoc.skip=true \
+        -Dmaven.test.skip=true \
+        -Dsource.skip=true \
+        -Dlicense.skipAddThirdParty=true \
+        -Dlicense.skipUpdateProjectLicense=true \
+        -Dlicense.skipDownloadLicenses \
+        -Dlicense.skipCheckLicense=true \
+        -Dmaven.license.skip=true $@
+
