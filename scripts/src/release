@@ -4,6 +4,7 @@
 set -e
 set -o pipefail
 
+
 clear
 
 printHelp(){
@@ -14,7 +15,6 @@ printHelp(){
 }
 
 release(){
-
     ### verify and print help
     if [ "${1}" == "-h" ]; then 
         printHelp
@@ -106,26 +106,59 @@ release(){
         exit 8
     fi
     
-    if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
-        echo "WARNING: No deployment repository defined! Define repository by exporting varibale MVN_RELEASE_REPOSITORY before triggering the release."
-        echo "         Continue without deployment..."
-    fi
+    # Outdated because travis is handling the deployment.
+    # if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
+    #     echo "DEBUG: No deployment repository defined! Define repository by exporting varibale MVN_RELEASE_REPOSITORY before triggering the release."
+    #     echo "         Continue without deployment..."
+    # fi
     
     if [ "${RELEASE_TYPE}" == 'stable' ]; then
         EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
         if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
-            echo "WARNING: Expected release Branch[$EXPECTED_RELEASE_BRANCH] but found Branch[$RELEASE_BRANCH]!"
-            echo "WARNING: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
-            echo "         Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated and version updated to [${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT]?"
-            awaitConfirmation &&
-            git checkout -b $EXPECTED_RELEASE_BRANCH
-            git push origin $EXPECTED_RELEASE_BRANCH
-            git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
-            mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'.0-SNAPSHOT'
-            git commit -am "create release branch ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT"
-            git push
-            echo INFO: Release branch created. Please check dependencies and remove snapshot versions. Afterwards restart this release script.
-            exit 0
+            if [ "${RELEASE_BRANCH}" == "master" ]; then
+                #echo "DEBUG: Master branch detected..."
+                #echo "DEBUG: check if master is fully merged into $EXPECTED_RELEASE_BRANCH."
+                if ! [ `git merge-base --is-ancestor master $EXPECTED_RELEASE_BRANCH` ]; then 
+                    echo "Latest $EXPECTED_RELEASE_BRANCH is up to date."
+                    if [ `git rev-list --count master...latest-stable` ]; then
+                        echo "No release necessary."
+                        return
+                    fi
+                fi
+                
+                if [ `git branch --list $EXPECTED_RELEASE_BRANCH ` ]; then	
+                    echo "Release branch $EXPECTED_RELEASE_BRANCH found!"
+                    git checkout $EXPECTED_RELEASE_BRANCH
+                    echo "Upgrade release branch..."
+                    git merge master
+                    echo "Upload release branch..."
+                    git push origin $EXPECTED_RELEASE_BRANCH
+                    release
+                    git checkout master
+                    return
+                else
+                    echo "No release branch found!"
+                    echo "Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated and the version updated to [${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT]?"
+                    awaitConfirmation &&
+                    git checkout -b $EXPECTED_RELEASE_BRANCH
+                    git push origin $EXPECTED_RELEASE_BRANCH
+                    git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
+                    mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'.0-SNAPSHOT'
+                    git commit -am "create release branch ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT"
+                    git push
+                    echo "INFO: Release branch created. Please check dependencies and remove snapshot versions. Afterwards restart this release script."
+                    return
+                fi
+            fi
+            echo "WARNING: Expected master or [$EXPECTED_RELEASE_BRANCH] branch but found [$RELEASE_BRANCH]!"
+            echo "ERROR: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
+            return 55
+        fi
+
+        echo "DEBUG: check if release has been changed since the last release was been performed"
+        if [ "git rev-list --count `$RELEASE_BRANCH`...latest-stable" ]; then
+            echo "Latest ${RELEASE_BRANCH} is up to date. No release necessary."
+            return
         fi
     fi
     
@@ -181,7 +214,7 @@ read -p "Please type y to confirm: " -n 1 -r &&
     echo &&  # new line
     if [[ ! $REPLY =~ ^[YyZz]$ ]]; then
         echo "Release aborted by user..."
-        exit 255
+        return 255
     fi
 }
 
