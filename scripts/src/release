@@ -52,6 +52,8 @@ release(){
     RELEASE_VERSION_MINOR="${components[1]}"
     RELEASE_VERSION_MICRO="${components[2]}"
 
+    # clear release type
+    RELEASE_TYPE=''
     
     if [[ "${RELEASE_BRANCH}" == *"alpha"* ]]; then
         RELEASE_TYPE='alpha'
@@ -118,17 +120,23 @@ release(){
             if [ "${RELEASE_BRANCH}" == "master" ]; then
                 #echo "DEBUG: Master branch detected..."
                 #echo "DEBUG: check if master is fully merged into $EXPECTED_RELEASE_BRANCH."
-                if ! [ `git merge-base --is-ancestor master $EXPECTED_RELEASE_BRANCH` ]; then 
+                set +e
+                git merge-base --is-ancestor origin/master origin/$EXPECTED_RELEASE_BRANCH
+                if [ $? -eq 0 ]; then 
                     echo "Latest $EXPECTED_RELEASE_BRANCH is up to date."
-                    if [ `git rev-list --count master...latest-stable` ]; then
+                    git merge-base --is-ancestor origin/master origin/latest-stable
+                    if [ $? -eq 0 ]; then
                         echo "No release necessary."
+                        set -e
                         return
                     fi
                 fi
-                
-                if [ `git branch --list $EXPECTED_RELEASE_BRANCH ` ]; then	
+                set -e
+
+                if [ `git branch -a --list origin/$EXPECTED_RELEASE_BRANCH ` ]; then	
                     echo "Release branch $EXPECTED_RELEASE_BRANCH found!"
                     git checkout $EXPECTED_RELEASE_BRANCH
+                    git pull
                     echo "Upgrade release branch..."
                     git merge master
                     echo "Upload release branch..."
@@ -155,11 +163,15 @@ release(){
             return 55
         fi
 
-        echo "DEBUG: check if release has been changed since the last release was been performed"
-        if [ "git rev-list --count `$RELEASE_BRANCH`...latest-stable" ]; then
-            echo "Latest ${RELEASE_BRANCH} is up to date. No release necessary."
+        #echo "DEBUG: check if release has been changed since the last release has been performed"
+        set +e
+        git merge-base --is-ancestor origin/$EXPECTED_RELEASE_BRANCH origin/latest-stable
+        if [ $? -eq 0 ]; then
+            echo "Latest $EXPECTED_RELEASE_BRANCH is up to date. No release necessary."
+            set -e
             return
         fi
+        set -e
     fi
     
     ### repare release
