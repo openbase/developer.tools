@@ -207,7 +207,7 @@ release(){
     git fetch --all
     git checkout $RELEASE_TAG
     echo "=== install release locally ==="
-    mvn clean install $MVN_ARGS
+    mvn clean install -DskipTests $MVN_ARGS 
 
     echo "=== deploy to scabb ===" &&
     if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
@@ -224,7 +224,7 @@ release(){
     echo "=== checkout and build release branch ===" && 
     git checkout ${RELEASE_BRANCH} &&
     git pull &&
-    mvn clean install $MVN_ARGS && 
+    mvn clean install -DskipTests $MVN_ARGS && 
 
     echo "=== finished ==="
 }
