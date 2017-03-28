@@ -24,8 +24,16 @@ release(){
     ### determine release informations
 
 #    if [ -z ${1+x} ]; then
-        echo "Determine release informations..." &&
-        CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["` &&
+        echo "Determine release informations..."
+        set +e
+        CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
+
+        if [ $? -gt 0 ]; then
+            echo Could not detect current release version!
+            mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version
+            exit 4
+        fi
+        set -e
 
         if [ $CURRENT_VERSION == 1 ]; then
             echo "ERROR: Could not detect pom file! Check if the current folder contains a file called \"pom.xml\"."
