@@ -4,10 +4,13 @@
 set -e
 
 upgrade(){
-
+    clear
+    echo "=== upgrade ==="
+    echo "please make sure all local changes are commited and pushed to the remote repository and press any key to confirm..."
+    read &&
     echo "=== sync ===" && 
-    git pull --rebase &&
-    echo please confirm to continue...
+    git pull &&
+    echo "press any key to continue..."
     read &&
     mvn release:update-versions -DautoVersionSubmodules -Dresume=false &&
     git commit -am "upgrade devel version." &&

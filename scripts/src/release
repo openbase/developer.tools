@@ -24,7 +24,7 @@ release(){
     ### determine release informations
 
 #    if [ -z ${1+x} ]; then
-        echo "Determine release informations..."
+        echo "Determine release informations of project: $(basename `pwd`)"
         set +e
         CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
 
@@ -199,8 +199,19 @@ release(){
     awaitConfirmation &&
 
     ### perform release
+    echo "=== verify build test and javadoc state ===" &&
+    mvn clean install javadoc:javadoc &&
+
+    if git diff-index --quiet HEAD --; then
+        # no code changes so just continue...
+    else
+        # code changes detected
+        echo "WARNING: There are local code changes detected! Please make sure all changes are commited into the remote repository and retry the release."
+        exit 10
+    fi    
+
     echo "=== prepare release ===" &&
-    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION $MVN_ARGS &&
+    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION $MVN_ARGS -DskipTests&&
     echo "=== cleanup ===" && 
     mvn release:clean &&
     echo "=== checkout new release ==="
