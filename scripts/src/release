@@ -200,11 +200,9 @@ release(){
 
     ### perform release
     echo "=== verify build test and javadoc state ===" &&
-    mvn clean install javadoc:javadoc &&
+    mvn clean install javadoc:javadoc
 
-    if git diff-index --quiet HEAD --; then
-        # no code changes so just continue...
-    else
+    if ! git diff-index --quiet HEAD --; then
         # code changes detected
         echo "WARNING: There are local code changes detected! Please make sure all changes are commited into the remote repository and retry the release."
         exit 10
