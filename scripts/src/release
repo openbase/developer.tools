@@ -183,6 +183,7 @@ release(){
     fi
     
     ### repare release
+    set -e    
 
     echo "================================================================================" &&
     echo " - current version:           $CURRENT_VERSION" &&
@@ -196,17 +197,25 @@ release(){
         echo " - deployment repository:     $MVN_RELEASE_REPOSITORY"
     fi
     echo "================================================================================" &&
-    awaitConfirmation &&
+    
+    awaitConfirmation
 
     ### perform release
     echo "=== verify build test and javadoc state ===" &&
     mvn clean install javadoc:javadoc
-
-    if ! git diff-index --quiet HEAD --; then
+    
+    echo "=== verify that all local changes are commited  ===" &&
+    set +e
+    
+    # check for local changes
+    git update-index -q --refresh
+    git diff-index --quiet HEAD --
+    if [ $? -ne 0 ] ; then
         # code changes detected
         echo "WARNING: There are local code changes detected! Please make sure all changes are commited into the remote repository and retry the release."
         exit 10
-    fi    
+    fi
+    set -e
 
     echo "=== prepare release ===" &&
     mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION $MVN_ARGS -DskipTests&&
