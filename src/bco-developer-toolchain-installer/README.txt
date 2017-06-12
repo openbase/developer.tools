@@ -1,4 +1,4 @@
-Setting up the working environment for HAIMoR in Ubuntu
+Setting up the working environment and tool chain of bco in Debian based distributions (e.g. Ubuntu).
 
 *Steps: *
 
@@ -7,7 +7,7 @@ Setting up the working environment for HAIMoR in Ubuntu
 	3. Now run ./configure.sh [Close the terminal after the script completes] 
 	4. Open a new terminal and run the script ./bco_batch_installer.sh
 
-This script will setup the working environment for HAIMoR project.
+This script will setup the working environment and tool chain of bco.
 
 *Running spread: *
 	Now we can open new terminal and run spread by typing the command ‘spread’
@@ -15,8 +15,8 @@ This script will setup the working environment for HAIMoR project.
 *Running bco *
 	Open another terminal and run bco by issuing the command bco
 
-Note:
 
+Note:
 	Kindly report if the script isn't working for someone. 
 	Email: vnatarajan@uni-bielefeld.de 
 
