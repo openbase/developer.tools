@@ -1,0 +1,11 @@
+#!/bin/bash
+
+awaitConfirmation(){
+    read -p "Please type y to confirm: " -n 1 -r &&
+    echo &&  # new line
+    if [[ ! $REPLY =~ ^[YyZz]$ ]]; then
+        echo "=== Action aborted by user..."
+        return 255
+    fi
+}
+

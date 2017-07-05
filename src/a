@@ -6,9 +6,18 @@ GREEN='\033[0;32m'
 ORANGE='\033[0;33m'
 BLUE='\033[0;34m'
 
+
+auto-generate-config() {
+echo "PROJECT_LIST=\"$(ls -d */)\"" >> .workspace.conf
+    echo -e "=== ${GREEN}Configuration file successfully created, if you just want to access specific projects please modify the PROJECT_LIST in your configuration file \".workspace.conf\".${NC}"
+}
+
 # verify project folder
 if [ ! -e ./.workspace.conf ]; then
     echo -e "=== ${ORANGE}Current folder seems not to be a project folder. (Project configuration file \".workspace.conf\" not found)${NC} ==="
+    source script-utils
+    echo -e "=== Should a configuration file be created for this folder and the projects be auto detected? ==="
+    awaitConfirmation && auto-generate-config && exit 0
     exit 1 
 fi
 # load project configuration
@@ -40,3 +49,8 @@ done
 END=$(date +%s.%N)
 PROCESSING_TIME=$(echo "$END - $START" | bc)
 echo -e "=== ${GREEN}finished${NC} in ${PROCESSING_TIME} sec ==="
+
+
+auto-generate-config() {
+   echo create stuff 
+}
