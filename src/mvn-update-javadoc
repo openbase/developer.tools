@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# clear existsing doc files 
+rm -rf docs
+mkdir docs
+ 
+# build javadoc 
+mvn javadoc:aggregate  -DreportOutputDirectory=docs
+

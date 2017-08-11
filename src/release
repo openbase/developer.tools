@@ -27,6 +27,8 @@ release(){
         echo "Determine release informations of project: $(basename `pwd`)"
         set +e
         CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
+        # we do it twice because during first start sometimes logging is injected.
+        CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
 
         if [ $? -gt 0 ]; then
             echo Could not detect current release version!
