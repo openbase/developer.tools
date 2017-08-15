@@ -204,8 +204,7 @@ release(){
 
     ### perform release
     echo "=== verify build test and javadoc state ===" &&
-    mvn clean install javadoc:javadoc
-    
+    mvn clean install javadoc:javadoc  $MVN_ARGS    
     echo "=== verify that all local changes are commited  ===" &&
     set +e
     
@@ -220,7 +219,7 @@ release(){
     set -e
 
     echo "=== prepare release ===" &&
-    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION $MVN_ARGS -DskipTests&&
+    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION $MVN_ARGS -DskipTests $MVN_ARGS &&
     echo "=== cleanup ===" && 
     mvn release:clean &&
     echo "=== checkout new release ==="
@@ -257,5 +256,5 @@ read -p "Please type y to confirm: " -n 1 -r &&
         return 255
     fi
 }
-
-release $@
+MVN_ARGS=$@
+release
