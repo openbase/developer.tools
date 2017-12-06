@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo this script is outdated!
+exit 1
+
+
 #################################################################		
 #			BCO Installer				#
 #								#
