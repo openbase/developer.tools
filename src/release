@@ -90,7 +90,7 @@ release(){
     else
         RELEASE_TAG=$RELEASE_TAG'-'$RELEASE_TYPE
     fi
-    
+
     ### verify release
     
     if [ -z "${CURRENT_VERSION}" ]; then
@@ -235,10 +235,13 @@ release(){
         mvn deploy -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
     fi
 
-    echo "=== upgrade latest-stable ===" &&
-    git checkout latest-stable &&
-    git reset --hard $RELEASE_TAG &&
-    git push origin latest-stable --force &&
+    if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
+        echo "=== upgrade latest-stable ===" &&
+        git branch -D latest-stable &&
+        git checkout latest-stable &&
+        git reset --hard $RELEASE_TAG &&
+        git push origin latest-stable --force &&
+    fi
 
     echo "=== checkout and build release branch ===" && 
     git checkout ${RELEASE_BRANCH} &&
