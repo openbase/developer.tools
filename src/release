@@ -89,6 +89,7 @@ release(){
         RELEASE_TYPE='stable'
     else
         RELEASE_TAG=$RELEASE_TAG'-'$RELEASE_TYPE
+        RELEASE_VERSION=$RELEASE_VERSION'-'$RELEASE_TYPE
     fi
 
     ### verify release
