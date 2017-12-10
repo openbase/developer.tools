@@ -240,7 +240,7 @@ release(){
         git branch -D latest-stable &&
         git checkout latest-stable &&
         git reset --hard $RELEASE_TAG &&
-        git push origin latest-stable --force &&
+        git push origin latest-stable --force
     fi
 
     echo "=== checkout and build release branch ===" && 
