@@ -62,7 +62,7 @@ release(){
     #echo RELEASE_VERSION_MICRO $RELEASE_VERSION_MICRO   
 
     # clear release type
-    RELEASE_TYPE=$FORCED_RELEASE_TYPE
+    RELEASE_TYPE=''
     
     if [[ "${RELEASE_BRANCH}" == *"alpha"* ]]; then
         RELEASE_TYPE='alpha'
@@ -124,7 +124,14 @@ release(){
         exit 8
     fi
     
-    EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
+    # detect expected release branch, if the release type is forced an compatible release branch is expected
+    if [ -z "${FORCED_RELEASE_TYPE}" ]; then
+          EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
+    else
+        # force release type
+        EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'-'${FORCED_RELEASE_TYPE}
+        RELEASE_TYPE=${FORCED_RELEASE_TYPE}
+    fi
 
     if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
         if [ "${RELEASE_BRANCH}" == "master" ]; then
