@@ -9,46 +9,38 @@ clear
 
 printHelp(){
     ### print help
-    echo "usage: release [version]";
-    echo "       release [version] [tag]"; 
-    echo "       release [version] [tag] [next release version]";
+    echo "usage: release [maven properties]";
+    echo "e.g:   release -DskipTests";
 }
 
 release(){
-    ### verify and print help
-    if [ "${1}" == "-h" ]; then 
-        printHelp
-        exit 1
-    fi
-
     ### determine release informations
 
-#    if [ -z ${1+x} ]; then
-        echo "Determine release informations of project: $(basename `pwd`)"
-        set +e
-        CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
-        # we do it twice because during first start sometimes logging is injected.
-        CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
+    echo "Determine release informations of project: $(basename `pwd`)"
+    set +e
+    CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
+    # we do it twice because during first start sometimes logging is injected.
+    CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
 
-        if [ $? -gt 0 ]; then
-            echo Could not detect current release version!
-            mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version
-            exit 4
-        fi
-        set -e
+    if [ $? -gt 0 ]; then
+        echo Could not detect current release version!
+        mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version
+        exit 4
+    fi
+    set -e
 
-        if [ $CURRENT_VERSION == 1 ]; then
-            echo "ERROR: Could not detect pom file! Check if the current folder contains a file called \"pom.xml\"."
-            exit 2
-        fi
-        
-        if [[ "${CURRENT_VERSION}" != *"-SNAPSHOT" ]]; then
-            echo "ERROR: Current project Version[$CURRENT_VERSION] seems not to be a snapshot! Please check release branch!"
-            exit 3
-        fi
+    if [ $CURRENT_VERSION == 1 ]; then
+        echo "ERROR: Could not detect pom file! Check if the current folder contains a file called \"pom.xml\"."
+        exit 2
+    fi
+    
+    if [[ "${CURRENT_VERSION}" != *"-SNAPSHOT" ]]; then
+        echo "ERROR: Current project Version[$CURRENT_VERSION] seems not to be a snapshot! Please check release branch!"
+        exit 3
+    fi
 
-        RELEASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
- #   fi
+    RELEASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
+
 
     RELEASE_VERSION=${1:-"${RELEASE_VERSION}"}  &&
     RELEASE_TAG=${2:-"v${RELEASE_VERSION}"}  &&
@@ -63,7 +55,7 @@ release(){
     RELEASE_VERSION_MICRO="${components[2]}"
 
     # clear release type
-    RELEASE_TYPE=''
+    RELEASE_TYPE=$FORCED_RELEASE_TYPE
     
     if [[ "${RELEASE_BRANCH}" == *"alpha"* ]]; then
         RELEASE_TYPE='alpha'
@@ -88,8 +80,13 @@ release(){
     if [ -z "${RELEASE_TYPE}" ]; then
         RELEASE_TYPE='stable'
     else
-        RELEASE_TAG=$RELEASE_TAG'-'$RELEASE_TYPE
-        RELEASE_VERSION=$RELEASE_VERSION'-'$RELEASE_TYPE
+        set +e
+            BUILD_NUMBER=`git rev-list HEAD ^${RELEASE_TAG}-0 --count 2>/dev/null`
+        set -e
+        BUILD_NUMBER=${BUILD_NUMBER:-0}
+
+        RELEASE_TAG=$RELEASE_TAG'-'$RELEASE_TYPE'-'$BUILD_NUMBER
+        RELEASE_VERSION=$RELEASE_VERSION'-'$RELEASE_TYPE'-'$BUILD_NUMBER
     fi
 
     ### verify release
@@ -127,63 +124,66 @@ release(){
     
     if [ "${RELEASE_TYPE}" == 'stable' ]; then
         EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
-        if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
-            if [ "${RELEASE_BRANCH}" == "master" ]; then
-                #echo "DEBUG: Master branch detected..."
-                #echo "DEBUG: check if master is fully merged into $EXPECTED_RELEASE_BRANCH."
-                set +e
-                git merge-base --is-ancestor origin/master origin/$EXPECTED_RELEASE_BRANCH
-                if [ $? -eq 0 ]; then 
-                    echo "Latest $EXPECTED_RELEASE_BRANCH is up to date."
-                    git merge-base --is-ancestor origin/master origin/latest-stable
-                    if [ $? -eq 0 ]; then
-                        echo "No release necessary."
-                        set -e
-                        return
-                    fi
-                fi
-                set -e
+    else
+        EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'-'${RELEASE_TYPE}
+    fi
 
-                if [ `git branch -a --list origin/$EXPECTED_RELEASE_BRANCH ` ]; then	
-                    echo "Release branch $EXPECTED_RELEASE_BRANCH found!"
-                    git checkout $EXPECTED_RELEASE_BRANCH
-                    git pull
-                    echo "Upgrade release branch..."
-                    git merge master
-                    echo "Upload release branch..."
-                    git push origin $EXPECTED_RELEASE_BRANCH
-                    release
-                    git checkout master
-                    return
-                else
-                    echo "No release branch found!"
-                    echo "Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated and the version updated to [${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT]?"
-                    awaitConfirmation &&
-                    git checkout -b $EXPECTED_RELEASE_BRANCH
-                    git push origin $EXPECTED_RELEASE_BRANCH
-                    git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
-                    mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'.0-SNAPSHOT'
-                    git commit -am "create release branch ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT"
-                    git push
-                    echo "INFO: Release branch created. Please check dependencies and remove snapshot versions. Afterwards restart this release script."
+    if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
+        if [ "${RELEASE_BRANCH}" == "master" ]; then
+            #echo "DEBUG: Master branch detected..."
+            #echo "DEBUG: check if master is fully merged into $EXPECTED_RELEASE_BRANCH."
+            set +e
+            git merge-base --is-ancestor origin/master origin/$EXPECTED_RELEASE_BRANCH
+            if [ $? -eq 0 ]; then 
+                echo "Latest $EXPECTED_RELEASE_BRANCH is up to date."
+                git merge-base --is-ancestor origin/master origin/latest-stable
+                if [ $? -eq 0 ]; then
+                    echo "No release necessary."
+                    set -e
                     return
                 fi
             fi
-            echo "WARNING: Expected master or [$EXPECTED_RELEASE_BRANCH] branch but found [$RELEASE_BRANCH]!"
-            echo "ERROR: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
-            return 55
-        fi
-
-        #echo "DEBUG: check if release has been changed since the last release has been performed"
-        set +e
-        git merge-base --is-ancestor origin/$EXPECTED_RELEASE_BRANCH origin/latest-stable
-        if [ $? -eq 0 ]; then
-            echo "Latest $EXPECTED_RELEASE_BRANCH is up to date. No release necessary."
             set -e
-            return
+
+            if [ `git branch -a --list origin/$EXPECTED_RELEASE_BRANCH ` ]; then	
+                echo "Release branch $EXPECTED_RELEASE_BRANCH found!"
+                git checkout $EXPECTED_RELEASE_BRANCH
+                git pull
+                echo "Upgrade release branch..."
+                git merge master
+                echo "Upload release branch..."
+                git push origin $EXPECTED_RELEASE_BRANCH
+                release
+                git checkout master
+                return
+            else
+                echo "No release branch found!"
+                echo "Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated and the version updated to [${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT]?"
+                awaitConfirmation &&
+                git checkout -b $EXPECTED_RELEASE_BRANCH
+                git push origin $EXPECTED_RELEASE_BRANCH
+                git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
+                mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'.0-SNAPSHOT'
+                git commit -am "create release branch ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT"
+                git push
+                echo "INFO: Release branch created. Please check dependencies and remove snapshot versions. Afterwards restart this release script."
+                return
+            fi
         fi
-        set -e
+        echo "WARNING: Expected master or [$EXPECTED_RELEASE_BRANCH] branch but found [$RELEASE_BRANCH]!"
+        echo "ERROR: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
+        return 55
     fi
+
+    #echo "DEBUG: check if release has been changed since the last release has been performed"
+    set +e
+    git merge-base --is-ancestor origin/$EXPECTED_RELEASE_BRANCH origin/latest-stable
+    if [ $? -eq 0 ]; then
+        echo "Latest $EXPECTED_RELEASE_BRANCH is up to date. No release necessary."
+        set -e
+        return
+    fi
+        set -e
     
     ### repare release
     set -e    
@@ -260,5 +260,14 @@ read -p "Please type y to confirm: " -n 1 -r &&
         return 255
     fi
 }
+
+
+
+### verify and print help
+if [ "${1}" == "-h" ]; then 
+    printHelp
+    exit 1
+fi
+
 MVN_ARGS=$@
 release

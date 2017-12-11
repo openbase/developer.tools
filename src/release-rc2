@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# configure exit on error
+set -e
+set -o pipefail
+
+export FORCED_RELEASE_TYPE=rc2
+export MVN_ARGS=$@
+release
