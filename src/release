@@ -39,20 +39,27 @@ release(){
         exit 3
     fi
 
+    #echo CURRENT_VERSION $CURRENT_VERSION
+
     RELEASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
+    RELEASE_VERSION=${FORECE_RELEASE_VERSION:-"${RELEASE_VERSION}"}  &&
+    RELEASE_TAG=${FORCE_RELEASE_TAG:-"v${RELEASE_VERSION}"}  &&
 
-
-    RELEASE_VERSION=${1:-"${RELEASE_VERSION}"}  &&
-    RELEASE_TAG=${2:-"v${RELEASE_VERSION}"}  &&
-    NEXT_RELEASE_VERSION=${3:-"${RELEASE_VERSION%.*}.$((${RELEASE_VERSION##*.}+1))-SNAPSHOT"}  &&
     RELEASE_BRANCH=`git rev-parse --abbrev-ref HEAD`  &&
 
+    #echo RELEASE_VERSION $RELEASE_VERSION
+    #echo RELEASE_VERSION_COPPED ${RELEASE_VERSION##*-}
+
     IFS='.'
-    components=(${RELEASE_VERSION##*-})
+        components=(${RELEASE_VERSION%-SNAPSHOT})
     IFS=''
     RELEASE_VERSION_MAJOR="${components[0]}"
     RELEASE_VERSION_MINOR="${components[1]}"
     RELEASE_VERSION_MICRO="${components[2]}"
+
+    #echo RELEASE_VERSION_MAJOR $RELEASE_VERSION_MAJOR
+    #echo RELEASE_VERSION_MAJOR $RELEASE_VERSION_MINOR
+    #echo RELEASE_VERSION_MICRO $RELEASE_VERSION_MICRO   
 
     # clear release type
     RELEASE_TYPE=$FORCED_RELEASE_TYPE
@@ -79,14 +86,15 @@ release(){
 
     if [ -z "${RELEASE_TYPE}" ]; then
         RELEASE_TYPE='stable'
+        NEXT_RELEASE_VERSION=${FORCE_NEXT_RELEASE_VERSION:-"${RELEASE_VERSION%.*}.$((${RELEASE_VERSION##*.}+1))-SNAPSHOT"}
     else
+        NEXT_RELEASE_VERSION=${CURRENT_VERSION}
         set +e
             BUILD_NUMBER=`git rev-list HEAD ^${RELEASE_TAG}-0 --count 2>/dev/null`
         set -e
         BUILD_NUMBER=${BUILD_NUMBER:-0}
-
-        RELEASE_TAG=$RELEASE_TAG'-'$RELEASE_TYPE'-'$BUILD_NUMBER
-        RELEASE_VERSION=$RELEASE_VERSION'-'$RELEASE_TYPE'-'$BUILD_NUMBER
+        RELEASE_TAG=$RELEASE_TAG'-'$BUILD_NUMBER
+        RELEASE_VERSION=$RELEASE_VERSION'-'$BUILD_NUMBER
     fi
 
     ### verify release
@@ -116,24 +124,14 @@ release(){
         exit 8
     fi
     
-    # Outdated because travis is handling the deployment.
-    # if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
-    #     echo "DEBUG: No deployment repository defined! Define repository by exporting varibale MVN_RELEASE_REPOSITORY before triggering the release."
-    #     echo "         Continue without deployment..."
-    # fi
-    
-    if [ "${RELEASE_TYPE}" == 'stable' ]; then
-        EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
-    else
-        EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'-'${RELEASE_TYPE}
-    fi
+    EXPECTED_RELEASE_BRANCH="release-"${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}
 
     if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
         if [ "${RELEASE_BRANCH}" == "master" ]; then
             #echo "DEBUG: Master branch detected..."
             #echo "DEBUG: check if master is fully merged into $EXPECTED_RELEASE_BRANCH."
             set +e
-            git merge-base --is-ancestor origin/master origin/$EXPECTED_RELEASE_BRANCH
+            git merge-base --is-ancestor origin/master origin/$EXPECTED_RELEASE_BRANCH 2>/dev/null
             if [ $? -eq 0 ]; then 
                 echo "Latest $EXPECTED_RELEASE_BRANCH is up to date."
                 git merge-base --is-ancestor origin/master origin/latest-stable
@@ -158,13 +156,21 @@ release(){
                 return
             else
                 echo "No release branch found!"
-                echo "Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated and the version updated to [${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT]?"
+
+                if [ "${RELEASE_TYPE}" == 'stable' ]; then
+                    VERSION_SUFFIX='.0'
+                else
+                    VERSION_SUFFIX='-'${RELEASE_TYPE}
+                fi
+                NEW_VERSION=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}${VERSION_SUFFIX}'-SNAPSHOT'
+
+                echo "Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated and the version updated to [${NEW_VERSION}]?"
                 awaitConfirmation &&
                 git checkout -b $EXPECTED_RELEASE_BRANCH
                 git push origin $EXPECTED_RELEASE_BRANCH
                 git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
-                mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}'.0-SNAPSHOT'
-                git commit -am "create release branch ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}.0-SNAPSHOT"
+                mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${NEW_VERSION}
+                git commit -am "create release branch $EXPECTED_RELEASE_BRANCH and update version to ${NEW_VERSION}"
                 git push
                 echo "INFO: Release branch created. Please check dependencies and remove snapshot versions. Afterwards restart this release script."
                 return
@@ -229,9 +235,9 @@ release(){
     echo "=== install release locally ==="
     mvn clean install -DskipTests $MVN_ARGS 
 
-    echo "=== deploy to scabb ===" &&
+    echo "=== deploy to external repo ===" &&
     if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
-        echo "INFO: Skip deployment."
+        echo "INFO: Skip external deployment because no mvn repo was defined."
     else
         mvn deploy -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
     fi
