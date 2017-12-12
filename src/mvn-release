@@ -9,8 +9,8 @@ clear
 
 printHelp(){
     ### print help
-    echo "usage: release [maven properties]";
-    echo "e.g:   release -DskipTests";
+    echo "usage: mvn-release [maven properties]";
+    echo "e.g:   mvn-release -DskipTests";
 }
 
 release(){
