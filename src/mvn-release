@@ -165,14 +165,14 @@ release(){
 
             if [ `git branch -a --list origin/$EXPECTED_RELEASE_BRANCH ` ]; then	
                 echo "Release branch $EXPECTED_RELEASE_BRANCH found!"
-                git checkout $EXPECTED_RELEASE_BRANCH
-                git pull
+                $DRY_RUN git checkout $EXPECTED_RELEASE_BRANCH
+                $DRY_RUN git pull
                 echo "Upgrade release branch..."
-                git merge master
+                $DRY_RUN git merge master
                 echo "Upload release branch..."
-                git push origin $EXPECTED_RELEASE_BRANCH
+                $DRY_RUN git push origin $EXPECTED_RELEASE_BRANCH
                 release
-                git checkout master
+                $DRY_RUN git checkout master
                 return
             else
                 echo "No release branch found!"
@@ -186,12 +186,12 @@ release(){
 
                 echo "Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated and the version updated to [${NEW_VERSION}]?"
                 awaitConfirmation &&
-                git checkout -b $EXPECTED_RELEASE_BRANCH
-                git push origin $EXPECTED_RELEASE_BRANCH
-                git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
-                mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${NEW_VERSION}
-                git commit -am "create release branch $EXPECTED_RELEASE_BRANCH and update version to ${NEW_VERSION}"
-                git push
+                $DRY_RUN git checkout -b $EXPECTED_RELEASE_BRANCH
+                $DRY_RUN git push origin $EXPECTED_RELEASE_BRANCH
+                $DRY_RUN git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
+                $DRY_RUN mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${NEW_VERSION}
+                $DRY_RUN git commit -am "create release branch $EXPECTED_RELEASE_BRANCH and update version to ${NEW_VERSION}"
+                $DRY_RUN git push
                 echo "INFO: Release branch created. Please check dependencies and remove snapshot versions. Afterwards restart this release script."
                 return
             fi
@@ -231,13 +231,13 @@ release(){
 
     ### perform release
     echo "=== verify build test and javadoc state ===" &&
-    mvn clean install javadoc:javadoc $MVN_ARGS    
+    $DRY_RUN mvn clean install javadoc:javadoc $MVN_ARGS    
     echo "=== verify that all local changes are commited  ===" &&
     set +e
     
     # check for local changes
-    git update-index -q --refresh
-    git diff-index --quiet HEAD --
+    $DRY_RUN git update-index -q --refresh
+    $DRY_RUN git diff-index --quiet HEAD --
     if [ $? -ne 0 ] ; then
         # code changes detected
         echo "WARNING: There are local code changes detected! Please make sure all changes are commited into the remote repository and retry the release."
@@ -246,34 +246,34 @@ release(){
     set -e
 
     echo "=== prepare release ===" &&
-    mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION $MVN_ARGS -DskipTests $MVN_ARGS &&
+    $DRY_RUN mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION -DskipTests $MVN_ARGS &&
     echo "=== cleanup ===" && 
-    mvn release:clean &&
+    $DRY_RUN mvn release:clean &&
     echo "=== checkout new release ==="
-    git fetch --all
-    git checkout $RELEASE_TAG
+    $DRY_RUN git fetch --all
+    $DRY_RUN git checkout $RELEASE_TAG
     echo "=== install release locally ==="
-    mvn clean install -DskipTests $MVN_ARGS 
+    $DRY_RUN mvn clean install -DskipTests $MVN_ARGS 
 
     echo "=== deploy to external repo ===" &&
     if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
         echo "INFO: Skip external deployment because no mvn repo was defined."
     else
-        mvn deploy -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
+        $DRY_RUN mvn deploy -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
     fi
 
     if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
         echo "=== upgrade latest-stable ===" &&
-        git branch -D latest-stable &&
-        git checkout latest-stable &&
-        git reset --hard $RELEASE_TAG &&
-        git push origin latest-stable --force
+        $DRY_RUN git branch -D latest-stable &&
+        $DRY_RUN git checkout latest-stable &&
+        $DRY_RUN git reset --hard $RELEASE_TAG &&
+        $DRY_RUN git push origin latest-stable --force
     fi
 
     echo "=== checkout and build release branch ===" && 
-    git checkout ${RELEASE_BRANCH} &&
-    git pull &&
-    mvn clean install -DskipTests $MVN_ARGS && 
+    $DRY_RUN git checkout ${RELEASE_BRANCH} &&
+    $DRY_RUN git pull &&
+    $DRY_RUN mvn clean install -DskipTests $MVN_ARGS && 
 
     echo "=== finished ==="
 }
