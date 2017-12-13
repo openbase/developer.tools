@@ -107,7 +107,7 @@ release(){
         set -e
         BUILD_NUMBER=${BUILD_NUMBER:-0}
         RELEASE_TAG=$RELEASE_TAG'.'$BUILD_NUMBER
-        RELEASE_VERSION=$RELEASE_VERSION'.'$BUILD_NUMBER
+        RELEASE_VERSION=$RELEASE_VERSION'-'$BUILD_NUMBER
     fi
 
     ### verify release
