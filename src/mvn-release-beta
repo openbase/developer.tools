@@ -6,4 +6,4 @@ set -o pipefail
 
 export FORCED_RELEASE_TYPE=beta
 export MVN_ARGS=$@
-release
+mvn-release

@@ -103,7 +103,10 @@ release(){
     else
         NEXT_RELEASE_VERSION=${CURRENT_VERSION}
         set +e
-            BUILD_NUMBER=`git rev-list HEAD ^${RELEASE_TAG}-0 --count 2>/dev/null`
+            echo git rev-list HEAD ^${RELEASE_TAG}-0 --count 2>/dev/null
+            BUILD_NUMBER=`git rev-list HEAD ^${RELEASE_TAG}.0 --count 2>/dev/null`
+            echo build $BUILD_NUMBER
+
         set -e
         BUILD_NUMBER=${BUILD_NUMBER:-0}
         RELEASE_TAG=$RELEASE_TAG'.'$BUILD_NUMBER
