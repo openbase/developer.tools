@@ -273,10 +273,19 @@ release(){
         $DRY_RUN git push origin latest-stable --force
     fi
 
-    echo "=== checkout and build release branch ===" && 
+    echo "=== checkout and fast build release branch ===" && 
     $DRY_RUN git checkout ${RELEASE_BRANCH} &&
     $DRY_RUN git pull &&
-    $DRY_RUN mvn clean install -DskipTests $MVN_ARGS && 
+    $DRY_RUN mvn clean install \ 
+        -DskipTests=true \
+        -Dmaven.test.skip=true \
+        -Dlicense.skipAddThirdParty=true \
+        -Dlicense.skipUpdateProjectLicense=true \
+        -Dlicense.skipDownloadLicenses \
+        -Dlicense.skipCheckLicense=true \
+        -Dmaven.license.skip=true \
+        $MVN_ARGS &&
+
 
     echo "=== finished ==="
 }
