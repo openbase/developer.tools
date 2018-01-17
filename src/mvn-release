@@ -267,7 +267,9 @@ release(){
 
     if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
         echo "=== upgrade latest-stable ===" &&
-        $DRY_RUN git branch -D latest-stable &&
+        set +e
+            $DRY_RUN git branch -D latest-stable  2> /dev/null
+        set -e
         $DRY_RUN git checkout latest-stable &&
         $DRY_RUN git reset --hard $RELEASE_TAG &&
         $DRY_RUN git push origin latest-stable --force
