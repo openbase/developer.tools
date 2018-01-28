@@ -268,11 +268,15 @@ release(){
     if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
         echo "=== upgrade latest-stable ===" &&
         set +e
-            $DRY_RUN git branch -D latest-stable  2> /dev/null
+            # delete maybe outdated branch because checkout can cause into merging conflicts
+            $DRY_RUN git branch -D latest-stable 2> /dev/null
         set -e
         $DRY_RUN git checkout latest-stable &&
         $DRY_RUN git reset --hard $RELEASE_TAG &&
-        $DRY_RUN git push origin latest-stable --force
+        $DRY_RUN git push origin latest-stable --force &&
+        # cleanup latest-stable branch
+        $DRY_RUN git checkout master
+        $DRY_RUN git branch -d latest-stable
     fi
 
     echo "=== checkout and fast build release branch ===" && 
