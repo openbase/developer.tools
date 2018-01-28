@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# configure exit on error
+set -e
+
+# create if not exist
+touch .gitignore
+
+# update with template
+curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/gitignore.template > .gitignore
