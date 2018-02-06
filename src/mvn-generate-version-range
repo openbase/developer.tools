@@ -1,0 +1,23 @@
+#!/bin/bash
+
+source script-utils
+
+# configure exit on error
+    set -e
+    set -o pipefail
+
+if [ ! $# -eq 2 ] ; then
+    echo "usage mvn-generate-version-range MAJOR MINOR"
+    exit
+fi
+
+MAJOR=$1
+MINOR_INCLUSIVE=$2
+MINOR_EXCLUSIVE=$((MINOR_INCLUSIVE+1))
+
+sed -i  "s/${MAJOR}.${MINOR_INCLUSIVE}-SNAPSHOT/[${MAJOR}.${MINOR_INCLUSIVE},${MAJOR}.${MINOR_EXCLUSIVE}-alpha)/g" pom.xml
+git diff
+
+echo everything ok? Confirm to auto commit...
+awaitConfirmation
+echo commit
