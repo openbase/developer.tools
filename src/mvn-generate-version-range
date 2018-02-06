@@ -20,4 +20,4 @@ git diff
 
 echo everything ok? Confirm to auto commit...
 awaitConfirmation
-echo commit
+git commit -am "switch dependency versions to stable release ranges."
