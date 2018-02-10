@@ -1,0 +1,35 @@
+#!/bin/bash
+
+source script-utils
+
+CONFIG_FOLDER=${HOME}/.config/
+DEFAULT_CONFIG=${CONFIG_FOLDER}/rsb.conf
+
+if [ -z ${1+x} ] || [ $1 == 'help' ] || [ $1 == 'h' ] || [ $1 == '--help' ] || [ $1 == '-h' ]; then
+    echo -e "usage: rsb-setup [CONFIG_ID]"
+    echo -e "            Links the referred config as default rsb config."
+    echo -e "       rsb-setup status"
+    echo -e "            Displays the currently selected rsb config."
+    echo -e "       rsb-setup --help"
+    echo -e "            Prints this help screen."
+    echo -e ""
+    echo -e "  e.g: ${WHITE}rsb-setup local${NC} : ${BLUE}~/.config/rsb.conf${NC} --> ${BLUE}~/.config/rsb-local.conf${NC}"
+    exit 0
+fi
+
+if [ $1 == 'status' ] ; then
+    SELECTED=$(readlink ${DEFAULT_CONFIG})
+    SELECTED=${SELECTED/${CONFIG_FOLDER}/''}
+    echo -e selected: ${GREEN}${SELECTED}${NC}    
+    exit 0
+fi
+
+
+CONFIG=~/.config/rsb-$1.conf
+
+if [ ! -e ~/.config/rsb-${1}.conf ] ; then
+    echo -e ${RED}rsb config ${WHITE}${CONFIG}${RED} not found!${NC}
+    exit 1
+fi
+
+ln -sf ~/.config/rsb-${1}.conf ${DEFAULT_CONFIG}
