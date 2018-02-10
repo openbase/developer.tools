@@ -5,6 +5,13 @@ source script-utils
 CONFIG_FOLDER=${HOME}/.config/
 DEFAULT_CONFIG=${CONFIG_FOLDER}/rsb.conf
 
+
+printStatus() {
+    SELECTED=$(readlink ${DEFAULT_CONFIG})
+    SELECTED=${SELECTED/${CONFIG_FOLDER}/''}
+    echo -e selected: ${GREEN}${SELECTED}${NC}    
+}
+
 if [ -z ${1+x} ] || [ $1 == 'help' ] || [ $1 == 'h' ] || [ $1 == '--help' ] || [ $1 == '-h' ]; then
     echo -e "usage: rsb-setup [CONFIG_ID]"
     echo -e "            Links the referred config as default rsb config."
@@ -18,9 +25,7 @@ if [ -z ${1+x} ] || [ $1 == 'help' ] || [ $1 == 'h' ] || [ $1 == '--help' ] || [
 fi
 
 if [ $1 == 'status' ] ; then
-    SELECTED=$(readlink ${DEFAULT_CONFIG})
-    SELECTED=${SELECTED/${CONFIG_FOLDER}/''}
-    echo -e selected: ${GREEN}${SELECTED}${NC}    
+    printStatus;
     exit 0
 fi
 
@@ -33,3 +38,6 @@ if [ ! -e ~/.config/rsb-${1}.conf ] ; then
 fi
 
 ln -sf ~/.config/rsb-${1}.conf ${DEFAULT_CONFIG}
+printStatus
+
+
