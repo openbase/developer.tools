@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source script-utils
+source openbase-script-utils
 
 CONFIG_FOLDER=${HOME}/.config/
 DEFAULT_CONFIG=${CONFIG_FOLDER}/rsb.conf

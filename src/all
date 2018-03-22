@@ -15,7 +15,7 @@ echo "PROJECT_LIST=\"$(ls -d */)\"" >> .workspace.conf
 # verify project folder
 if [ ! -e ./.workspace.conf ]; then
     echo -e "=== ${ORANGE}Current folder seems not to be a project folder. (Project configuration file \".workspace.conf\" not found)${NC} ==="
-    source script-utils
+    source openbase-script-utils
     echo -e "=== Should a configuration file be created for this folder and the projects be auto detected? ==="
     awaitConfirmation && auto-generate-config && exit 0
     exit 1 

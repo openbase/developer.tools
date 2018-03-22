@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source script-utils
+source openbase-script-utils
 
 # configure exit on error
     set -e
