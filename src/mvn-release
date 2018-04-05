@@ -271,19 +271,18 @@ release(){
             # delete maybe outdated branch because checkout can cause into merging conflicts
             $DRY_RUN git branch -D latest-stable 2> /dev/null
         set -e
-        $DRY_RUN git checkout latest-stable &&
+        $DRY_RUN git checkout -b latest-stable origin/latest-stable &&
         $DRY_RUN git reset --hard $RELEASE_TAG &&
-        $DRY_RUN git push origin latest-stable --force &&
+        $DRY_RUN git push origin latest-stable --force
         # cleanup latest-stable branch
         $DRY_RUN git checkout master
-        $DRY_RUN git branch -d latest-stable
+        $DRY_RUN git branch -D latest-stable
     fi
 
     echo "=== checkout and fast build release branch ===" && 
     $DRY_RUN git checkout ${RELEASE_BRANCH} &&
     $DRY_RUN git pull &&
     $DRY_RUN mvn clean install -DskipTests=true -Dmaven.test.skip=true -Dlicense.skipAddThirdParty=true -Dlicense.skipUpdateProjectLicense=true -Dlicense.skipDownloadLicenses -Dlicense.skipCheckLicense=true -Dmaven.license.skip=true $MVN_ARGS &&
-
 
     echo "=== finished ==="
 }
