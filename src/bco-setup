@@ -1,0 +1,51 @@
+#!/bin/bash
+
+source openbase-script-utils
+
+CONFIG_FOLDER=${HOME}/.config/
+DEFAULT_CONFIG=${CONFIG_FOLDER}/bco
+
+
+printStatus() {
+    SELECTED=$(readlink ${DEFAULT_CONFIG})
+    SELECTED=${SELECTED/${CONFIG_FOLDER}/''}
+    echo -e selected: ${GREEN}${SELECTED}${NC}    
+}
+
+if [ -z ${1+x} ] || [ $1 == 'help' ] || [ $1 == 'h' ] || [ $1 == '--help' ] || [ $1 == '-h' ]; then
+    echo -e "usage: bco-setup [CONFIG_ID]"
+    echo -e "            Links the referred config as default bco config."
+    echo -e "       bco-setup status"
+    echo -e "            Displays the currently selected bco config."
+    echo -e "       bco-setup avail"
+    echo -e "           Print available configurations."
+    echo -e "       bco-setup --help"
+    echo -e "            Prints this help screen."
+    echo -e ""
+    echo -e "  e.g: ${WHITE}bco-setup home${NC} : ${BLUE}~/.config/bco${NC} --> ${BLUE}~/.config/bco-home${NC}"
+    exit 0
+fi
+
+if [ $1 == 'status' ] ; then
+    printStatus;
+    exit 0
+fi
+
+if [ $1 == 'avail' ] ; then
+    echo -e ${WHITE}available:${GREEN}
+    basename -a $(ls ~/.config/bco-*)
+    echo -e ${NC}
+    exit 0
+fi
+
+CONFIG=~/.config/bco-$1
+
+if [ ! -e ~/.config/bco-${1} ] ; then
+    echo -e ${RED}bco config ${WHITE}${CONFIG}${RED} not found!${NC}
+    exit 1
+fi
+
+ln -sf ~/.config/bco-${1} ${DEFAULT_CONFIG}
+printStatus
+
+
