@@ -45,6 +45,10 @@ if [ ! -e ~/.config/bco-${1} ] ; then
     exit 1
 fi
 
+if [ -L ~/.config/bco ] ; then
+   rm ~/.config/bco
+fi
+
 ln -sf ~/.config/bco-${1} ${DEFAULT_CONFIG}
 printStatus
 
