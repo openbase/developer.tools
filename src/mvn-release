@@ -4,7 +4,6 @@
 set -e
 set -o pipefail
 
-
 clear
 
 printHelp(){
@@ -18,7 +17,7 @@ release(){
 
     echo "Determine release informations of project: $(basename `pwd`)"
     set +e
-    CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
+    mvn -q org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["
     # we do it twice because during first start sometimes logging is injected.
     CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
 
@@ -42,10 +41,10 @@ release(){
     
 
     RELEASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
-    RELEASE_VERSION=${FORECE_RELEASE_VERSION:-"${RELEASE_VERSION}"}  &&
-    RELEASE_TAG=${FORCE_RELEASE_TAG:-"v${RELEASE_VERSION}"}  &&
+    RELEASE_VERSION=${FORECE_RELEASE_VERSION:-"${RELEASE_VERSION}"}
+    RELEASE_TAG=${FORCE_RELEASE_TAG:-"v${RELEASE_VERSION}"}
 
-    RELEASE_BRANCH=`git rev-parse --abbrev-ref HEAD`  &&
+    RELEASE_BRANCH=`git rev-parse --abbrev-ref HEAD`
 
     
 
@@ -106,7 +105,6 @@ release(){
             echo git rev-list HEAD ^${RELEASE_TAG}-0 --count 2>/dev/null
             BUILD_NUMBER=`git rev-list HEAD ^${RELEASE_TAG}.0 --count 2>/dev/null`
             echo build $BUILD_NUMBER
-
         set -e
         BUILD_NUMBER=${BUILD_NUMBER:-0}
         RELEASE_TAG=$RELEASE_TAG'.'$BUILD_NUMBER
@@ -188,7 +186,7 @@ release(){
                 NEW_VERSION=${RELEASE_VERSION_MAJOR}'.'${RELEASE_VERSION_MINOR}${VERSION_SUFFIX}'-SNAPSHOT'
 
                 echo "Should the release branch [$EXPECTED_RELEASE_BRANCH] be auto generated and the version updated to [${NEW_VERSION}]?"
-                awaitConfirmation &&
+                awaitConfirmation
                 $DRY_RUN git checkout -b $EXPECTED_RELEASE_BRANCH
                 $DRY_RUN git push origin $EXPECTED_RELEASE_BRANCH
                 $DRY_RUN git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
@@ -212,30 +210,30 @@ release(){
         set -e
         return
     fi
-        set -e
+    set -e
     
     ### repare release
     set -e    
 
-    echo "================================================================================" &&
-    echo " - current version:           $CURRENT_VERSION" &&
-    echo " - release version:           $RELEASE_VERSION" &&
-    echo " - next release version:      $NEXT_RELEASE_VERSION" &&
-    echo "--------------------------------------------------------------------------------" &&
-    echo " - release branch:            $RELEASE_BRANCH" && 
-    echo " - release tag:               $RELEASE_TAG" &&
-    echo " - release type:              $RELEASE_TYPE" &&
+    echo "================================================================================"
+    echo " - current version:           $CURRENT_VERSION"
+    echo " - release version:           $RELEASE_VERSION"
+    echo " - next release version:      $NEXT_RELEASE_VERSION"
+    echo "--------------------------------------------------------------------------------"
+    echo " - release branch:            $RELEASE_BRANCH"
+    echo " - release tag:               $RELEASE_TAG"
+    echo " - release type:              $RELEASE_TYPE"
     if ! [ -z "$MVN_RELEASE_REPOSITORY" ]; then
         echo " - deployment repository:     $MVN_RELEASE_REPOSITORY"
     fi
-    echo "================================================================================" &&
+    echo "================================================================================"
     
     awaitConfirmation
 
     ### perform release
-    echo "=== verify build test and javadoc state ===" &&
-    $DRY_RUN mvn clean install javadoc:javadoc $MVN_ARGS    
-    echo "=== verify that all local changes are commited  ===" &&
+    echo "=== verify build test and javadoc state        ==="
+    $DRY_RUN mvn -q clean install javadoc:javadoc $MVN_ARGS    
+    echo "=== verify that all local changes are commited ==="
     set +e
     
     # check for local changes
@@ -248,55 +246,52 @@ release(){
     fi
     set -e
 
-    echo "=== prepare release ===" &&
-    $DRY_RUN mvn release:prepare --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION -DskipTests $MVN_ARGS &&
-    echo "=== cleanup ===" && 
-    $DRY_RUN mvn release:clean &&
-    echo "=== checkout new release ==="
+    echo "=== prepare release                            ===" 
+    $DRY_RUN mvn release:prepare -q --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION -DskipTests $MVN_ARGS
+    echo "=== cleanup                                    ==="
+    $DRY_RUN mvn release:clean -q
+    echo "=== checkout new release                       ==="
     $DRY_RUN git fetch --all
     $DRY_RUN git checkout $RELEASE_TAG
-    echo "=== install release locally ==="
-    $DRY_RUN mvn clean install -DskipTests $MVN_ARGS 
+    echo "=== install release locally                    ==="
+    $DRY_RUN mvn clean install -q -DskipTests $MVN_ARGS 
 
-    echo "=== deploy to external repo ===" &&
+    echo "=== deploy to external repo                    ==="
     if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
         echo "INFO: Skip external deployment because no mvn repo was defined."
     else
-        $DRY_RUN mvn deploy -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
+        $DRY_RUN mvn deploy -q -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
     fi
 
     if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
-        echo "=== upgrade latest-stable ===" &&
+        echo "=== upgrade latest-stable                  ==="
         set +e
             # delete maybe outdated branch because checkout can cause into merging conflicts
             $DRY_RUN git branch -D latest-stable 2> /dev/null
         set -e
-        $DRY_RUN git checkout -b latest-stable origin/latest-stable &&
-        $DRY_RUN git reset --hard $RELEASE_TAG &&
+        $DRY_RUN git checkout -b latest-stable origin/latest-stable
+        $DRY_RUN git reset --hard $RELEASE_TAG
         $DRY_RUN git push origin latest-stable --force
         # cleanup latest-stable branch
         $DRY_RUN git checkout master
         $DRY_RUN git branch -D latest-stable
     fi
 
-    echo "=== checkout and fast build release branch ===" && 
-    $DRY_RUN git checkout ${RELEASE_BRANCH} &&
-    $DRY_RUN git pull &&
-    $DRY_RUN mvn clean install -DskipTests=true -Dmaven.test.skip=true -Dlicense.skipAddThirdParty=true -Dlicense.skipUpdateProjectLicense=true -Dlicense.skipDownloadLicenses -Dlicense.skipCheckLicense=true -Dmaven.license.skip=true $MVN_ARGS &&
-
-    echo "=== finished ==="
+    echo "=== checkout and fast build release branch     ===" 
+    $DRY_RUN git checkout ${RELEASE_BRANCH}
+    $DRY_RUN git pull
+    $DRY_RUN mvn clean install -q -DskipTests=true -Dmaven.test.skip=true -Dlicense.skipAddThirdParty=true -Dlicense.skipUpdateProjectLicense=true -Dlicense.skipDownloadLicenses -Dlicense.skipCheckLicense=true -Dmaven.license.skip=true $MVN_ARGS
+    echo "=== finished                                   ==="
 }
 
 awaitConfirmation(){
-read -p "Please type y to confirm: " -n 1 -r &&
-    echo &&  # new line
+read -p "Please type y to confirm: " -n 1 -r
+    echo # new line
     if [[ ! $REPLY =~ ^[YyZz]$ ]]; then
-        echo "Release aborted by user..."
+        echo "Release aborted by user."
         return 255
     fi
 }
-
-
 
 ### verify and print help
 if [ "${1}" == "-h" ]; then 
