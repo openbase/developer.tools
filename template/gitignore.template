@@ -178,3 +178,7 @@ gen-external-apklibs
 ### Vim temporary files ###
 *.swp
 
+### Node JS and VuePress
+node_modules/.cache
+node_modules/vuepress/node_modules
+www/.vuepress
