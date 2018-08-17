@@ -15,9 +15,9 @@ printStatus() {
 if [ -z ${1+x} ] || [ $1 == 'help' ] || [ $1 == 'h' ] || [ $1 == '--help' ] || [ $1 == '-h' ]; then
     echo -e "usage: bco-setup [CONFIG_ID]"
     echo -e "            Links the referred config as default bco config."
-    echo -e "       bco-setup status"
+    echo -e "       bco-setup status | st"
     echo -e "            Displays the currently selected bco config."
-    echo -e "       bco-setup avail"
+    echo -e "       bco-setup avail | list"
     echo -e "           Print available configurations."
     echo -e "       bco-setup --help"
     echo -e "            Prints this help screen."
@@ -26,14 +26,14 @@ if [ -z ${1+x} ] || [ $1 == 'help' ] || [ $1 == 'h' ] || [ $1 == '--help' ] || [
     exit 0
 fi
 
-if [ $1 == 'status' ] ; then
+if [ $1 == 'status' ] || [ $1 == 'st' ]; then
     printStatus;
     exit 0
 fi
 
-if [ $1 == 'avail' ] ; then
+if [ $1 == 'avail' ] || [ $1 == 'list' ] ; then
     echo -e ${WHITE}available:${GREEN}
-    basename -a $(ls ~/.config/bco-*)
+    basename -a $(ls ~/.config/ | grep bco- | grep --color=never -oP "^bco-\K.*")
     echo -e ${NC}
     exit 0
 fi
