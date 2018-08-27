@@ -7,9 +7,12 @@ DEFAULT_CONFIG=${CONFIG_FOLDER}/rsb.conf
 
 
 printStatus() {
-    SELECTED=$(readlink ${DEFAULT_CONFIG})
-    SELECTED=${SELECTED/${CONFIG_FOLDER}/''}
-    echo -e selected: ${GREEN}${SELECTED}${NC}    
+    SELECTED_CONFIG=$(readlink ${DEFAULT_CONFIG})
+    SELECTED=${SELECTED_CONFIG/${CONFIG_FOLDER}/''}
+    SELECTED=${SELECTED/rsb-/''}
+    SELECTED=${SELECTED/.conf/''}
+
+    echo -e "selected: ${GREEN}${SELECTED}${NC} [ ${WHITE}${SELECTED_CONFIG}${NC} ]"    
 }
 
 if [ -z ${1+x} ] || [ $1 == 'help' ] || [ $1 == 'h' ] || [ $1 == '--help' ] || [ $1 == '-h' ]; then

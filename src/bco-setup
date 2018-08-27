@@ -7,9 +7,10 @@ DEFAULT_CONFIG=${CONFIG_FOLDER}/bco
 
 
 printStatus() {
-    SELECTED=$(readlink ${DEFAULT_CONFIG})
-    SELECTED=${SELECTED/${CONFIG_FOLDER}/''}
-    echo -e selected: ${GREEN}${SELECTED}${NC}    
+    SELECTED_CONFIG=$(readlink ${DEFAULT_CONFIG})
+    SELECTED=${SELECTED_CONFIG/${CONFIG_FOLDER}/''}
+    SELECTED=${SELECTED/bco-/''}
+    echo -e "selected: ${GREEN}${SELECTED}${NC} [ ${WHITE}${SELECTED_CONFIG}${NC} ]"
 }
 
 if [ -z ${1+x} ] || [ $1 == 'help' ] || [ $1 == 'h' ] || [ $1 == '--help' ] || [ $1 == '-h' ]; then
