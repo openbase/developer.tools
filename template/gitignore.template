@@ -186,6 +186,5 @@ gen-external-apklibs
 *.swp
 
 ### Node JS and VuePress
-node_modules/.cache
-node_modules/vuepress/node_modules
+node_modules
 www/.vuepress
