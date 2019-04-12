@@ -10,5 +10,5 @@ WHITE='\033[0;37m'
 APP_NAME='developer-tools'
 APP_NAME=${BLUE}${APP_NAME}${NC}
 echo -e "=== ${APP_NAME} project ${WHITE}installation${NC}" &&
-install -t ${prefix}/bin src/* &&
+rsync -a src/* ${prefix}/bin/ &&
 echo -e "=== ${APP_NAME} was ${GREEN}successfully${NC} installed to ${WHITE}${prefix}${NC}"
