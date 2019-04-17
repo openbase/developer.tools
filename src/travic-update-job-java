@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# configure exit on error
+set -e
+
+# create if not exist
+mkdir -p .travis
+touch .travis/deploy.sh
+touch .travis/generate-doc.sh
+touch .travis/settings.xml
+touch .travis.yml
+
+# update with template
+curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/travis/java/.travis/deploy.sh > .travis/deploy.sh
+curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/travis/java/.travis/generate-doc.sh > .travis/generate-doc.sh
+curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/travis/java/.travis/settings.xml > .travis/settings.xml
+curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/travis/java/.travis.yml > .travis.yml
