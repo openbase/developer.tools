@@ -10,6 +10,10 @@ touch .travis/generate-doc.sh
 touch .travis/settings.xml
 touch .travis.yml
 
+# adjust permissions
+chmod u+x .travis/deploy.sh 
+chmod u+x .travis/generate-doc.sh
+
 # update with template
 curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/travis/java/.travis/deploy.sh > .travis/deploy.sh
 curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/travis/java/.travis/generate-doc.sh > .travis/generate-doc.sh
