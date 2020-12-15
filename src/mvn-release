@@ -17,13 +17,13 @@ release(){
 
     echo "Determine release informations of project: $(basename `pwd`)"
     set +e
-    mvn -q org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["
+    mvn -Prelease -q org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["
     # we do it twice because during first start sometimes logging is injected.
     CURRENT_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version 2>/dev/null| grep -v "^\["`
 
     if [ $? -gt 0 ]; then
         echo Could not detect current release version!
-        mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version
+        mvn -Prelease org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version
         exit 4
     fi
     set -e
@@ -190,7 +190,7 @@ release(){
                 $DRY_RUN git checkout -b $EXPECTED_RELEASE_BRANCH
                 $DRY_RUN git push origin $EXPECTED_RELEASE_BRANCH
                 $DRY_RUN git branch --set-upstream-to=origin/$EXPECTED_RELEASE_BRANCH $EXPECTED_RELEASE_BRANCH
-                $DRY_RUN mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${NEW_VERSION}
+                $DRY_RUN mvn -Prelease versions:set -DgenerateBackupPoms=false -DnewVersion=${NEW_VERSION}
                 $DRY_RUN git commit -am "create release branch $EXPECTED_RELEASE_BRANCH and update version to ${NEW_VERSION}"
                 $DRY_RUN git push
                 echo "INFO: Release branch created. Please check dependencies and remove snapshot versions. Afterwards restart this release script."
@@ -232,7 +232,7 @@ release(){
 
     ### perform release
     echo "=== verify build test and javadoc state        ==="
-    $DRY_RUN mvn -q -Prelease clean install javadoc:javadoc $MVN_ARGS
+    $DRY_RUN mvn -Prelease -q clean install javadoc:javadoc $MVN_ARGS
     echo "=== verify that all local changes are commited ==="
     set +e
     
@@ -247,20 +247,20 @@ release(){
     set -e
 
     echo "=== prepare release                            ===" 
-    $DRY_RUN mvn release:prepare -q --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION -DskipTests $MVN_ARGS
+    $DRY_RUN mvn -Prelease release:prepare -q --batch-mode -DautoVersionSubmodules -Dresume=false -Dtag=$RELEASE_TAG -DreleaseVersion=$RELEASE_VERSION -DdevelopmentVersion=$NEXT_RELEASE_VERSION -DskipTests $MVN_ARGS
     echo "=== cleanup                                    ==="
-    $DRY_RUN mvn release:clean -q
+    $DRY_RUN mvn -Prelease release:clean -q
     echo "=== checkout new release                       ==="
     $DRY_RUN git fetch --all
     $DRY_RUN git checkout $RELEASE_TAG
     echo "=== install release locally                    ==="
-    $DRY_RUN mvn clean install -q -DskipTests $MVN_ARGS 
+    $DRY_RUN mvn -Prelease clean install -q -DskipTests $MVN_ARGS 
 
     echo "=== deploy to external repo                    ==="
     if [ -z "${MVN_RELEASE_REPOSITORY}" ]; then
         echo "INFO: Skip external deployment because no mvn repo was defined."
     else
-        $DRY_RUN mvn deploy -q -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
+        $DRY_RUN mvn -Prelease deploy -q -DaltDeploymentRepository=releases::default::$MVN_RELEASE_REPOSITORY -DskipTests $MVN_ARGS
     fi
 
     if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
@@ -280,7 +280,7 @@ release(){
     echo "=== checkout and fast build release branch     ===" 
     $DRY_RUN git checkout ${RELEASE_BRANCH}
     $DRY_RUN git pull
-    $DRY_RUN mvn clean install -q -DskipTests=true -Dmaven.test.skip=true -Dlicense.skipAddThirdParty=true -Dlicense.skipUpdateProjectLicense=true -Dlicense.skipDownloadLicenses -Dlicense.skipCheckLicense=true -Dmaven.license.skip=true $MVN_ARGS
+    $DRY_RUN mvn -Prelease clean install -q -DskipTests=true -Dmaven.test.skip=true -Dlicense.skipAddThirdParty=true -Dlicense.skipUpdateProjectLicense=true -Dlicense.skipDownloadLicenses -Dlicense.skipCheckLicense=true -Dmaven.license.skip=true $MVN_ARGS
     echo "=== finished                                   ==="
 }
 
