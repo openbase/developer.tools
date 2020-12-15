@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# configure exit on error
+set -e
+
+# create if not exist
+mkdir -p .github/workflows
+touch .github/workflows
+touch .github/workflows/maven-publish.yml
+
+# update with template
+curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/github-actions/java/.github/workflows/maven-publish.yml > .github/workflows/maven-publish.yml
