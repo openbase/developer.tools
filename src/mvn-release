@@ -148,14 +148,14 @@ release(){
     fi  
 
     if [ "${RELEASE_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]; then
-        if [ "${RELEASE_BRANCH}" == "master" ]; then
-            #echo "DEBUG: Master branch detected..."
-            #echo "DEBUG: check if master is fully merged into $EXPECTED_RELEASE_BRANCH."
+        if [ "${RELEASE_BRANCH}" == "dev" ]; then
+            #echo "DEBUG: dev branch detected..."
+            #echo "DEBUG: check if dev is fully merged into $EXPECTED_RELEASE_BRANCH."
             set +e
-            git merge-base --is-ancestor origin/master origin/$EXPECTED_RELEASE_BRANCH 2>/dev/null
+            git merge-base --is-ancestor origin/dev origin/$EXPECTED_RELEASE_BRANCH 2>/dev/null
             if [ $? -eq 0 ]; then 
                 echo "Latest $EXPECTED_RELEASE_BRANCH is up to date."
-                git merge-base --is-ancestor origin/master origin/latest-stable
+                git merge-base --is-ancestor origin/dev origin/stable
                 if [ $? -eq 0 ]; then
                     echo "No release necessary."
                     set -e
@@ -169,11 +169,11 @@ release(){
                 $DRY_RUN git checkout $EXPECTED_RELEASE_BRANCH
                 $DRY_RUN git pull
                 echo "Upgrade release branch..."
-                $DRY_RUN git merge master
+                $DRY_RUN git merge dev
                 echo "Upload release branch..."
                 $DRY_RUN git push origin $EXPECTED_RELEASE_BRANCH
                 release
-                $DRY_RUN git checkout master
+                $DRY_RUN git checkout dev
                 return
             else
                 echo "No release branch found!"
@@ -197,14 +197,14 @@ release(){
                 return
             fi
         fi
-        echo "WARNING: Expected master or [$EXPECTED_RELEASE_BRANCH] branch but found [$RELEASE_BRANCH]!"
+        echo "WARNING: Expected dev or [$EXPECTED_RELEASE_BRANCH] branch but found [$RELEASE_BRANCH]!"
         echo "ERROR: Current Branch[$RELEASE_BRANCH] is not compatible to the pom defined release Version[$RELEASE_VERSION]!"
         return 55
     fi
 
     #echo "DEBUG: check if release has been changed since the last release has been performed"
     set +e
-    git merge-base --is-ancestor origin/$EXPECTED_RELEASE_BRANCH origin/latest-stable
+    git merge-base --is-ancestor origin/$EXPECTED_RELEASE_BRANCH origin/stable
     if [ $? -eq 0 ]; then
         echo "Latest $EXPECTED_RELEASE_BRANCH is up to date. No release necessary."
         set -e
@@ -264,17 +264,17 @@ release(){
     fi
 
     if [[ "${RELEASE_TYPE}" == 'stable' ]]; then
-        echo "=== upgrade latest-stable                  ==="
+        echo "=== upgrade stable                  ==="
         set +e
             # delete maybe outdated branch because checkout can cause into merging conflicts
-            $DRY_RUN git branch -D latest-stable 2> /dev/null
+            $DRY_RUN git branch -D stable 2> /dev/null
         set -e
-        $DRY_RUN git checkout -b latest-stable origin/latest-stable
-        $DRY_RUN git reset --hard $RELEASE_TAG
-        $DRY_RUN git push origin latest-stable --force
-        # cleanup latest-stable branch
-        $DRY_RUN git checkout master
-        $DRY_RUN git branch -D latest-stable
+        $DRY_RUN git checkout -b stable origin/stable
+        $DRY_RUN git merge dev
+        $DRY_RUN git push origin stable
+        # cleanup stable branch
+        $DRY_RUN git checkout dev
+        $DRY_RUN git branch -D stable
     fi
 
     echo "=== checkout and fast build release branch     ===" 
