@@ -7,4 +7,4 @@ set -e
 touch .gitignore
 
 # update with template
-curl https://raw.githubusercontent.com/openbase/developer.tools/master/template/gitignore.template > .gitignore
+curl https://raw.githubusercontent.com/openbase/developer.tools/main/template/gitignore.template > .gitignore
