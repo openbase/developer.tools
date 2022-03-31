@@ -12,7 +12,7 @@ export OPENBASE_DIST="${OPENBASE_DIST:=$BCO_DIST}"
 
 if [ ! -d ${OPENBASE_DIST} ]; then
     echo "No openbase distribution found at: ${OPENBASE_DIST}"
-    echo "Please define the distribution installation target directory by setting the $OPENBASE_DIST environment variable."
+    echo 'Please define the distribution installation target directory by setting the $OPENBASE_DIST environment variable.'
     exit 255
 fi
 
