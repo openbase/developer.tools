@@ -34,7 +34,7 @@ fi
 
 if [ $1 == 'avail' ] || [ $1 == 'list' ] ; then
     echo -e ${WHITE}available:${GREEN}
-    basename -a $(ls ~/.config/ | grep bco- | grep --color=never -oP "^bco-\K.*")
+    basename -a $(ls ~/.config/ | grep -Eo 'bco-[a-zA-Z]+' | cut -c 5-)
     echo -e ${NC}
     exit 0
 fi
